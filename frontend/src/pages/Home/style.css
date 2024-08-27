@@ -1,0 +1,5 @@
+.wrapper {
+    min-height: calc(100vh - 42px);
+    margin-top: 42px;
+    margin-bottom: 14px;
+}

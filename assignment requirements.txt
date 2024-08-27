@@ -1,0 +1,26 @@
+Assignment web3:
+
+functions:
+- login with metamask (frontend)
+- deposit token A (ERC20) into APR = 8% 
+- token A will be blocked for 5 mins after deposit
+- after deposit 1M token A -> mint 1 token B (ERC721)
+- user can withdraw when not blocked (2 options: withdraw & claim reward)
+    + withdraw: get the token a
+    + claim reward: get the token in APR rate without affecting the original tokens
+- display transaction history (paging, sorting...):
+    + how to do it? : the contracts should emit events when ever a tracsaction is done.
+    then the backendd should listen to the events emited by the contracts and save it in the database
+
+advanced functions:
+- if user deposit an token B (NFT 721), the APR will be added by 2% for that user
+    + note: increase/decrease %APR only triggered at time when deposit/withdraw token B
+- frontend: 
+    + create an admin page to manage APR (updateable)
+    + admin can view all transactions, search by wallet (paging, sort by time...)
+
+requirements:
+- login with metamask
+- using BSC testnet
+- perform deposit, withdraw token ERC20 (token A) on frontend (can use web3, ether,... npm)
+- crawl data on backend (listen to save data from events emited by contracts from backend)

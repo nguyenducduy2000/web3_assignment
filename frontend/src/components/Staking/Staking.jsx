@@ -6,7 +6,9 @@ function Staking() {
     const {
         depositedTokenA,
         depositedTokenB,
-        depositReward,
+        calculatedReward,
+        pendingReward,
+        timestamp,
         locktime,
         nftTimestamp,
     } = useContractBalanceStore();
@@ -42,12 +44,19 @@ function Staking() {
                                 : "Loading..."}
                         </p>
                         <p>
-                            Your pending reward:{" "}
-                            {depositReward
-                                ? `${depositReward} TKA`
+                            Your calculated reward:{" "}
+                            {calculatedReward
+                                ? `${calculatedReward} TKA`
                                 : "Loading..."}
                         </p>
-                        <p>Deposit is locked until: {locktime}</p>
+                        <p>
+                            Your pending reward:{" "}
+                            {pendingReward
+                                ? `${pendingReward} TKA`
+                                : "Loading..."}
+                        </p>
+                        <p>Last contract interaction: {timestamp}</p>
+                        <p>Contract locked timestamp: {locktime}</p>
                     </Card>
                     <Card
                         style={{

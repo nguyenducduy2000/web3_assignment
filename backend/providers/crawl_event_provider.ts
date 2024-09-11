@@ -5,7 +5,7 @@ import LastCrawledBlock from '../app/models/last_crawled_block.js'
 import contractAddress from '../contracts/contract-address.json' assert { type: 'json' }
 import StakingArtifact from '../contracts/Staking.json' assert { type: 'json' }
 import dotenv from 'dotenv'
-import config from '../config.js'
+// import config from '../config.js'
 
 dotenv.config()
 
@@ -14,12 +14,12 @@ export default async function eventCrawler() {
     const { Staking } = contractAddress
     const provider = new ethers.providers.JsonRpcProvider(process.env.BSC_URL)
     const stakingContract = new ethers.Contract(Staking, StakingArtifact.abi, provider)
-    const CHUNK_PER_CONJOB = config.CHUNK_PER_CONJOB + 10000
-
+    const chunkPerConjob = Number.parseInt(process.env.CHUNK_PER_CONJOB)
+    const BLOCK_NUMBER = Number.parseInt(process.env.BLOCK_NUMBER)
     // Function to get the last crawled block
     async function getLastCrawledBlock() {
         const lastCrawled = await LastCrawledBlock.query().orderBy('id', 'desc').first()
-        return lastCrawled ? lastCrawled.blockNumber : config.BLOCK_NUMBER // Start from config.BLOCK_NUMBER if no records exist
+        return lastCrawled ? lastCrawled.blockNumber : BLOCK_NUMBER // Start from config.BLOCK_NUMBER if no records exist
     }
 
     // Function to update the last crawled block
@@ -39,12 +39,10 @@ export default async function eventCrawler() {
             const user = args[0]
             const arg = args[1]
             // const amount = args.amount || ethers.BigNumber.from(0)
-            console.log(event)
+            // console.log(event)
             // Retrieve the transaction receipt to calculate the fee
             const receipt = await provider.getTransactionReceipt(transactionHash)
-            const txnFee = ethers.BigNumber.from(receipt.gasUsed)
-                .mul(receipt.effectiveGasPrice)
-                .toString() // Convert fee to Wei
+            const txnFee = receipt.gasUsed.mul(receipt.effectiveGasPrice)
             // const { gasPrice } = await provider.getTransaction(transactionHash) // gas price at the time of transaction
             const { timestamp } = await provider.getBlock(event.blockNumber)
             // console.log(timestamp)
@@ -68,10 +66,12 @@ export default async function eventCrawler() {
                 block: blockNumber,
                 age: timestamp,
                 user: user,
-                // args: ethers.utils.formatEther(arg),
-                args: arg,
+                from: receipt.from,
+                to: receipt.to,
+                args: ethers.utils.formatEther(arg),
+                // args: arg,
                 // amount: ethers.utils.formatEther(amount),
-                txnFee: txnFee,
+                txnFee: ethers.utils.formatEther(txnFee),
             })
 
             console.log(`Saved transaction: ${transactionHash} with logIndex: ${logIndex}`)
@@ -90,10 +90,10 @@ export default async function eventCrawler() {
             console.log(`Last crawled block: ${lastCrawledBlock} Current block: ${currentBlock}`)
             console.log('Differences: ', blockDiff)
 
-            if (blockDiff < CHUNK_PER_CONJOB) {
+            if (blockDiff < chunkPerConjob) {
                 await crawlData(lastCrawledBlock, currentBlock)
-            } else if (blockDiff >= CHUNK_PER_CONJOB) {
-                let endBlock = lastCrawledBlock + CHUNK_PER_CONJOB
+            } else if (blockDiff >= chunkPerConjob) {
+                let endBlock = lastCrawledBlock + chunkPerConjob
                 if (endBlock > currentBlock) {
                     endBlock = currentBlock
                 }

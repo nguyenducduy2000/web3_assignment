@@ -1,20 +1,43 @@
 import { Content } from "antd/es/layout/layout";
-import { Col, Row } from "antd";
+import { Col, Flex, Row } from "antd";
 import { useEffect } from "react";
 import { useWalletStore, useContractBalanceStore } from "../../store";
 import { AccountInformation } from "../../components/AccountInformation";
 import Staking from "../../components/Staking/Staking";
+import { Admin } from "../../components/Admin";
 function Home() {
+    const owner = import.meta.env.VITE_OWNER;
     const { signer, address, network } = useWalletStore();
-    const { fetchBalances, fetchOwnedNFTs } = useContractBalanceStore();
+    const {
+        fetchBalances,
+        fetchOwnedNFTs,
+        transferTokensToUser,
+        depositTokenA,
+        withdraw,
+        depositTokenB,
+        withdrawTokenB,
+        claimReward,
+    } = useContractBalanceStore();
 
     useEffect(() => {
         if (signer && address) {
             // Fetch balances when signer and address are available
             fetchBalances(signer, address);
-            fetchOwnedNFTs(signer, address);
+            // fetchOwnedNFTs(signer, address);
         }
-    }, [signer, address, network, fetchBalances, fetchOwnedNFTs]);
+    }, [
+        signer,
+        address,
+        network,
+        fetchBalances,
+        fetchOwnedNFTs,
+        transferTokensToUser,
+        depositTokenA,
+        withdraw,
+        depositTokenB,
+        withdrawTokenB,
+        claimReward,
+    ]);
 
     if (!signer) {
         return (
@@ -39,7 +62,11 @@ function Home() {
                     <Staking />
                 </Col>
                 <Col span={8}>
-                    <AccountInformation />
+                    <Flex vertical gap={"small"}>
+                        <AccountInformation />
+                        {console.log(owner)}
+                        {address === `0x${owner}` ? <Admin /> : <div>Is not admin</div>}
+                    </Flex>
                 </Col>
             </Row>
         </Content>

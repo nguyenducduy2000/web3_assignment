@@ -14,7 +14,7 @@ function TokenAInfo() {
     const {
         totalSupply,
         tokenA,
-        APR,
+        bonusAPR,
         transferTokensToUser,
         depositTokenA,
         withdraw,
@@ -93,8 +93,8 @@ function TokenAInfo() {
                     }}
                     className="px-2"
                 >
-                    <span style={{ fontWeight: "bold" }}>User APR</span>:{" "}
-                    {APR || "Loading..."} %
+                    <span style={{ fontWeight: "bold" }}>Your bonus APR</span>:{" "}
+                    {bonusAPR || "Loading..."} %
                 </div>
                 <Flex className="mt-2" gap={"small"}>
                     <ActionButton

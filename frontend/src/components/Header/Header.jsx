@@ -3,12 +3,13 @@ import { Header as AntdHeader } from "antd/es/layout/layout";
 import { Menu, Button, Dropdown, Flex } from "antd";
 // import { ethers } from "ethers";
 import { toast } from "react-toastify";
-import useWalletStore from "../../store/useWalletStore";
+import { useWalletStore, useContractBalanceStore } from "../../store";
 // import useContractBalanceStore from "../../store/useContractBalanceStore";
 
 function Header() {
     const navigate = useNavigate();
     const { provider, address, balance, login, logout } = useWalletStore();
+    const { baseAPR } = useContractBalanceStore();
     const handleChangeWallet = async () => {
         try {
             if (!provider) {
@@ -49,13 +50,14 @@ function Header() {
                 }
             },
         },
-        {
-            key: "admin",
-            label: "Admin",
-            onClick: () => {
-                navigate("/admin");
-            },
-        },
+        // {
+        //     key: "admin",
+        //     label: "Admin",
+
+        //     onClick: () => {
+        //         navigate("/admin");
+        //     },
+        // },
     ];
 
     const menuItems = [
@@ -96,6 +98,10 @@ function Header() {
             {address ? (
                 <>
                     <Flex gap={"small"} className="me-2">
+                        <p className="mx-2" style={{ textAlign: "center", marginTop: "10px" }}>
+                            <span style={{ fontWeight: "bold" }}>BASE APR:</span>{" "}
+                            {baseAPR ? `${baseAPR} %` : "Loading..."}
+                        </p>
                         <p className="mx-2" style={{ textAlign: "center", marginTop: "10px" }}>
                             <span style={{ fontWeight: "bold" }}>Balance</span>:{" "}
                             {balance ? `${balance} ETH` : "Loading..."}

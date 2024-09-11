@@ -8,7 +8,7 @@ import useWalletStore from "../../store/useWalletStore";
 import { usePaginationPage, useHistory, useFilter } from "../../store";
 import { useNavigate } from "react-router-dom";
 import Filter from "../../components/Filter/";
-import { ethers } from "ethers";
+// import { ethers } from "ethers";
 const columns = [
     {
         title: "#", // Index column
@@ -19,11 +19,6 @@ const columns = [
         title: "Transaction Hash",
         dataIndex: "transactionHash",
         key: "transactionHash",
-    },
-    {
-        title: "Log Index",
-        dataIndex: "logIndex",
-        key: "logIndex",
     },
     {
         title: "Event method",
@@ -55,7 +50,7 @@ const columns = [
         key: "block",
     },
     {
-        title: "Age",
+        title: "Event timestamp",
         dataIndex: "age",
         key: "age",
         render: (timestamp) => {
@@ -64,27 +59,51 @@ const columns = [
         },
     },
     {
-        title: "User",
-        dataIndex: "user",
-        key: "user",
+        title: "From",
+        dataIndex: "from",
+        key: "from",
     },
+    {
+        title: "To",
+        dataIndex: "to",
+        key: "to",
+    },
+    // {
+    //     title: "User",
+    //     dataIndex: "user",
+    //     key: "user",
+    // },
     {
         title: "Args",
         dataIndex: "args",
         key: "args",
-        // render: (data) => {
-        //     console.log(data);
-        //     return data.toString();
-        // },
+        render: (args, record) => {
+            const { method } = record;
+    
+            if (method.includes("NFT")) {
+                // Treat the args as a string, remove leading zeros, and remove the decimal point
+                let tokenId = args.toString().replace(/\./g, '').replace(/^0+/, ''); // Remove leading zeros and decimal point
+    
+                // If the tokenId becomes empty after stripping, it's 0
+                if (tokenId === "") {
+                    tokenId = "0";
+                }
+    
+                return `Token Id: ${tokenId}`;
+            } else {
+                // For non-NFT methods, display 2 decimal places
+                return `${parseFloat(args).toFixed(2)} TKA`;
+            }
+        },
     },
     {
         title: "Txn Fee",
         dataIndex: "txnFee",
         key: "txnFee",
-        // render: (data) => {
-        //     console.log(data)
-        //     return ethers.utils.parseUnits(data, 18);
-        // }
+        render: (txnFee) => {
+            // Limit the transaction fee to 8 decimal places
+            return `${parseFloat(txnFee).toFixed(8)} TKA`;
+        },
     },
 ];
 

@@ -5,11 +5,13 @@ import "./TokenA.sol";
 import "./TokenB.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Staking {
+
+contract Staking is Ownable {
     TokenA public tokenA;
     TokenB public tokenB;
-    uint256 public constant BASE_APR = 8; // 8% annual return
+    uint256 public BASE_APR = 8; // 8% annual return
     uint256 public constant LOCK_TIME = 30 seconds;
     uint256 public constant MINT_THRESHOLD = 1_000_000 * 10 ** 18; // 1M Token A
     uint256 public lockTimestamp;
@@ -20,13 +22,12 @@ contract Staking {
         uint256 reward;
         uint256 timestamp;
         uint256 nftDepositedTime;
-        uint256 userAPR;
-        uint256 totalDepositedAmount;
+        uint256 bonusAPR;
     }
-
+    // mapping(address => uint256) public userAPR;
+    mapping(address => uint256) public totalDepositedAmount;
     mapping(address => DepositInfo) public deposits;
     mapping(address => uint256[]) public depositedNFTs; // Track the NFTs deposited by the user
-    mapping(address => uint256) public mintedNFTs;
 
     event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
@@ -35,7 +36,7 @@ contract Staking {
     event NFTDeposited(address indexed user, uint256 tokenId);
     event NFTWithdrawn(address indexed user, uint256 tokenId);
 
-    constructor(address _tokenA, address _tokenB) {
+    constructor(address _tokenA, address _tokenB) Ownable(msg.sender) {
         tokenA = TokenA(_tokenA);
         tokenB = TokenB(_tokenB);
     }
@@ -54,9 +55,9 @@ contract Staking {
         // If the user is depositing for the first time
         if (userDeposit.counter == 0) {
             // Set the user's APR to the base rate if it's not already set
-            if (userDeposit.userAPR == 0) {
-                userDeposit.userAPR = BASE_APR;
-            }
+            // if (userDeposit.userAPR == 0) {
+            //     userDeposit.userAPR = BASE_APR;
+            // }
             // Initialize the timestamp
             userDeposit.timestamp = block.timestamp;
         } else {
@@ -71,16 +72,19 @@ contract Staking {
 
         // Update the deposit info
         userDeposit.amount += _amount;
-        userDeposit.totalDepositedAmount += _amount;
+        // userDeposit.totalDepositedAmount += _amount;
+        totalDepositedAmount[msg.sender] += _amount;
         userDeposit.counter += 1; // Increment the deposit/withdrawal counter
         // Update the timestamp
         userDeposit.timestamp = block.timestamp;
         lockTimestamp = block.timestamp + LOCK_TIME;
 
+        uint256 nftCounter = tokenB.getNFTCount(msg.sender);
+
+        uint256 _totalDepositedAmount = totalDepositedAmount[msg.sender];
         // Mint NFT if the amount is above the mint threshold
-        uint256 nftNumber = userDeposit.totalDepositedAmount /
-            MINT_THRESHOLD -
-            mintedNFTs[msg.sender];
+        uint256 nftNumber = (_totalDepositedAmount / MINT_THRESHOLD) -
+            nftCounter;
         for (uint256 i = 0; i < nftNumber; i++) {
             uint256 tokenId = tokenB.mintNFT(msg.sender);
             emit NFTMinted(msg.sender, tokenId);
@@ -107,12 +111,17 @@ contract Staking {
             tokenA.transferReward(msg.sender, reward),
             "Transfer reward failed"
         );
+        // Reset the deposit and reward
+        userDeposit.amount = 0;
+        userDeposit.reward = 0;
+        // userDeposit.timestamp = block.timestamp;
+        // userDeposit.userAPR = BASE_APR;
 
         emit Withdrawn(msg.sender, userDeposit.amount);
         emit RewardClaimed(msg.sender, reward);
 
         // @dev should remove this line later
-        delete deposits[msg.sender];
+        // delete deposits[msg.sender];
     }
 
     function claimReward() external {
@@ -158,13 +167,15 @@ contract Staking {
         }
 
         // Increase user's APR by 2% for each NFT deposited
-        userDeposit.userAPR += 2;
+        userDeposit.bonusAPR += 2;
 
         // Update the nftDepositedTime
         userDeposit.nftDepositedTime = block.timestamp;
 
         // Track the deposited NFT
         depositedNFTs[msg.sender].push(tokenId);
+        // update tokenB NFT counter
+        // tokenB._minusNFTCount();
 
         userDeposit.timestamp = block.timestamp;
 
@@ -180,6 +191,7 @@ contract Staking {
         // Transfer the NFT back to the user
         tokenB.transferFrom(address(this), msg.sender, tokenId);
 
+        uint256[] memory nfts = depositedNFTs[msg.sender];
         DepositInfo storage userDeposit = deposits[msg.sender];
 
         // Calculate the reward accumulated so far
@@ -187,10 +199,11 @@ contract Staking {
             uint256 rewardSinceLastNFTWithdraw = calculateReward(msg.sender);
             userDeposit.reward += rewardSinceLastNFTWithdraw;
         }
+        uint256 userAPR = BASE_APR + (userDeposit.bonusAPR * nfts.length);
 
         // Decrease user's APR by 2% per withdrawn NFT, but not below the base APR
-        if (userDeposit.userAPR > BASE_APR) {
-            userDeposit.userAPR -= 2;
+        if (userAPR > BASE_APR) {
+            userDeposit.bonusAPR -= 2;
         }
         userDeposit.timestamp = block.timestamp;
 
@@ -199,6 +212,9 @@ contract Staking {
 
         // Remove the NFT from the user's deposited list
         _removeNFT(msg.sender, tokenId);
+
+        // update tokenB NFT counter
+        // tokenB._addNFTCount();
 
         emit NFTWithdrawn(msg.sender, tokenId);
     }
@@ -231,12 +247,15 @@ contract Staking {
 
     function calculateReward(address user) public view returns (uint256) {
         DepositInfo memory userDeposit = deposits[user];
+        uint256[] memory nfts = depositedNFTs[user];
         if (userDeposit.amount == 0) return 0;
 
         uint256 timeStaked = block.timestamp - userDeposit.timestamp; // timeStaked = now - previous deposit time
-        uint256 userSpecificAPR = userDeposit.userAPR > 0
-            ? userDeposit.userAPR
-            : BASE_APR; // either BASE_APR or user specific APR
+        // uint256 userSpecificAPR = userDeposit.bonusAPR > 0
+        //     ? userDeposit.userAPR
+        //     : BASE_APR; // either BASE_APR or user specific APR
+        uint256 userSpecificAPR = BASE_APR +
+            (userDeposit.bonusAPR * nfts.length);
 
         uint256 baseReward;
         uint256 bonusReward;
@@ -285,5 +304,9 @@ contract Staking {
         address user
     ) external view returns (uint256[] memory) {
         return depositedNFTs[user];
+    }
+
+    function modifyBaseAPR(uint256 newBaseAPR) external onlyOwner() {
+        BASE_APR = newBaseAPR;
     }
 }

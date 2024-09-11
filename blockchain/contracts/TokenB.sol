@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract TokenB is ERC721 {
     uint256 public nextTokenId;
@@ -22,4 +23,5 @@ contract TokenB is ERC721 {
     function getNFTCount(address user) external view returns (uint256) {
         return nftCounter[user];
     }
+
 }

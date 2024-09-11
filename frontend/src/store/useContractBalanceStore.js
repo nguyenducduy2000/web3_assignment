@@ -13,11 +13,14 @@ const useContractBalanceStore = create((set, get) => ({
     depositedTokenA: null,
     depositedTokenB: [],
     stakingBalance: null,
-    APR: null,
+    baseAPR: null,
+    bonusAPR: null,
     depositCounter: null,
-    depositReward: null,
+    calculatedReward: null,
+    pendingReward: null,
     depositTimestamp: null,
     ownedNFTs: [],
+    timestamp: null,
     locktime: null,
     nftTimestamp: null,
     fixedGaslimit: 9000000,
@@ -40,14 +43,17 @@ const useContractBalanceStore = create((set, get) => ({
             const stakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
             const depositInfo = await stakingContract.deposits(address);
             const depositedTokenB = await stakingContract.getDepositedNFTs(address);
-
+            const pendingReward = await stakingContract.calculateReward(address);
+            const baseAPR = await stakingContract.BASE_APR();
+            const locktime = await stakingContract.lockTimestamp();
             // Parse the deposit info
-            const [counter, amount, reward, timestamp, nftTimestamp, userAPR] = depositInfo.toString().split(",");
+            const [counter, amount, reward, timestamp, nftTimestamp, bonusAPR] = depositInfo.toString().split(",");
             // Convert to a Date object;
-            const locktime = parseInt(timestamp) + 300;
-            const dateTime = new Date(locktime * 1000); // Multiply by 1000 to convert seconds to milliseconds
+            // const timestamp = parseInt(timestamp) + 300;
+            const dateTime = new Date(parseInt(timestamp) * 1000); // Multiply by 1000 to convert seconds to milliseconds
             // Convert to a human-readable string
             const formattedDate = dateTime.toLocaleString(); // Local date and time string
+            const formattedLocktime = new Date(parseInt(locktime) * 1000).toLocaleString();
             const nftDate = new Date(parseInt(nftTimestamp) * 1000);
             // Update the state with the fetched balances and deposit info
             get().fetchOwnedNFTs(signer, address);
@@ -61,11 +67,14 @@ const useContractBalanceStore = create((set, get) => ({
                     .split(",")
                     .filter((token) => token !== ""),
                 stakingBalance: amount, // Same as depositedTokenA in this case
-                APR: userAPR.toString(),
+                baseAPR: baseAPR.toString(),
+                bonusAPR: bonusAPR.toString(),
                 depositCounter: counter,
-                depositReward: ethers.utils.formatEther(reward),
+                calculatedReward: ethers.utils.formatEther(reward),
+                pendingReward: ethers.utils.formatEther(pendingReward),
                 depositTimestamp: timestamp,
-                locktime: formattedDate,
+                timestamp: formattedDate,
+                locktime: formattedLocktime,
                 nftTimestamp: nftDate.toLocaleString(),
             });
         } catch (error) {
@@ -136,7 +145,7 @@ const useContractBalanceStore = create((set, get) => ({
             toast.success(`Successfully deposited ${ethers.utils.formatEther(amountWei)} Token A`);
 
             // Update balances after deposit
-            await get().fetchBalances(signer, await signer.getAddress());
+            // await get().fetchBalances(signer, await signer.getAddress());
         } catch (error) {
             console.error("Failed to transfer tokens:", error);
             toast.error(error.message);
@@ -158,7 +167,7 @@ const useContractBalanceStore = create((set, get) => ({
 
             if (receipt.status === 1) {
                 toast.success(`Successfully withdrawn tokens`);
-                await get().fetchBalances(signer, await signer.getAddress());
+                // await get().fetchBalances(signer, await signer.getAddress());
             } else {
                 throw new Error("Transaction failed");
             }
@@ -190,7 +199,7 @@ const useContractBalanceStore = create((set, get) => ({
             if (receipt.status === 1) {
                 toast.success(`Successfully deposited Token ${tokenId}`);
                 // Update balances after deposit
-                await get().fetchBalances(signer, await signer.getAddress());
+                // await get().fetchBalances(signer, await signer.getAddress());
                 return true;
             } else {
                 throw new Error("Transaction failed");
@@ -218,7 +227,7 @@ const useContractBalanceStore = create((set, get) => ({
             if (receipt.status === 1) {
                 toast.success(`Successfully withdrawn Token: ${tokenId}`);
                 // Update balances after withdrawal
-                await get().fetchBalances(signer, await signer.getAddress());
+                // await get().fetchBalances(signer, await signer.getAddress());
             } else {
                 throw new Error("Transaction failed");
             }
@@ -275,8 +284,8 @@ const useContractBalanceStore = create((set, get) => ({
             if (receipt.status === 1) {
                 toast.success(`Successfully claim reward`);
                 // Update balances after withdrawal
-                await get().fetchBalances(signer, await signer.getAddress());
-                await get().fetchOwnedNFTs(signer, await signer.getAddress());
+                // await get().fetchBalances(signer, await signer.getAddress());
+                // await get().fetchOwnedNFTs(signer, await signer.getAddress());
             }
         } catch (error) {
             console.error("Failed to withdraw tokens:", error);

@@ -1,6 +1,7 @@
 // This is a script for deploying your contracts. You can adapt it to deploy
 // yours, or create new ones.
 
+require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
 
@@ -40,23 +41,50 @@ async function main() {
     console.log("staking receipt:", receipt.blockNumber);
 
     // We also save the contract's artifacts and address in the frontend directory
-    saveFrontendFiles({
-        TokenA: tokenA.address,
-        TokenB: tokenB.address,
-        Staking: staking.address,
-    });
-    saveBackendFiles({
-        TokenA: tokenA.address,
-        TokenB: tokenB.address,
-        Staking: staking.address,
-    });
-    // Save the staking contract block number to config file
-    await saveStakingContractBlockNumber(receipt.blockNumber);
+    saveContractAbiFile(
+        {
+            TokenA: tokenA.address,
+            TokenB: tokenB.address,
+            Staking: staking.address,
+        },
+        "frontend"
+    );
+    saveContractAbiFile(
+        {
+            TokenA: tokenA.address,
+            TokenB: tokenB.address,
+            Staking: staking.address,
+        },
+        "backend"
+    );
+
+    // Save the staking contract block number and other data to .env files
+    await saveDataToENV(
+        {
+            BLOCK_NUMBER: receipt.blockNumber,
+            CHUNK_PER_CONJOB: 5000,
+            OWNER: process.env.PUBLIC_KEY,
+        },
+        "backend"
+    );
+    await saveDataToENV(
+        {
+            INIT_BLOCK: receipt.blockNumber,
+            OWNER: process.env.PUBLIC_KEY,
+        },
+        "frontend"
+    );
 }
 
-function saveFrontendFiles(addresses) {
+function saveContractAbiFile(addresses, file = "") {
     const fs = require("fs");
-    const contractsDir = path.join(__dirname, "..", "..", "frontend", "src", "contracts");
+    let contractsDir;
+
+    if (file === "frontend") {
+        contractsDir = path.join(__dirname, "..", "..", file, "src", "contracts");
+    } else if (file === "backend") {
+        contractsDir = path.join(__dirname, "..", "..", file, "contracts");
+    }
 
     if (!fs.existsSync(contractsDir)) {
         fs.mkdirSync(contractsDir);
@@ -72,50 +100,30 @@ function saveFrontendFiles(addresses) {
     });
 }
 
-function saveBackendFiles(addresses) {
-    const fs = require("fs");
-    const contractsDir = path.join(__dirname, "..", "..", "backend", "contracts");
+async function saveDataToENV(data, fileName) {
+    const envFilePath = path.join(__dirname, "..", "..", fileName, ".env");
 
-    if (!fs.existsSync(contractsDir)) {
-        fs.mkdirSync(contractsDir);
-    }
+    // Read existing .env content or create an empty string if file doesn't exist
+    let envContent = fs.existsSync(envFilePath) ? fs.readFileSync(envFilePath, "utf-8") : "";
 
-    fs.writeFileSync(path.join(contractsDir, "contract-address.json"), JSON.stringify(addresses, undefined, 2));
+    for (const [key, value] of Object.entries(data)) {
+        const regex = new RegExp(`^${key}=.*$`, "m");
+        const newEntry = `${key}=${value}`;
 
-    myArtifact = ["TokenA", "TokenB", "Staking"];
-
-    myArtifact.forEach((artifact) => {
-        const TokenArtifact = artifacts.readArtifactSync(artifact);
-        fs.writeFileSync(path.join(contractsDir, `${artifact}.json`), JSON.stringify(TokenArtifact, null, 2));
-    });
-}
-
-async function saveStakingContractBlockNumber(blockNumber) {
-    console.log("Staking contract deployed at block number:", blockNumber);
-
-    const configFilePath = path.join(__dirname, "..", "..", "backend", "config.ts");
-    let config = {};
-
-    // Load existing configuration if the file exists
-    if (fs.existsSync(configFilePath)) {
-        try {
-            const existingConfig = await import(`file://${configFilePath}`);
-            config = existingConfig.default || {}; // Handle default exports
-        } catch (err) {
-            console.error("Error loading config file:", err);
+        if (regex.test(envContent)) {
+            // Key exists, update the value
+            envContent = envContent.replace(regex, newEntry);
+            // console.log(`${key} value updated to ${value} in .env file`);
+        } else {
+            // Key doesn't exist, append it
+            envContent += envContent.endsWith("\n") ? newEntry : `\n${newEntry}`;
+            // console.log(`${key} added to .env file with value: ${value}`);
         }
     }
 
-    // Add or update the necessary fields
-    config.BLOCK_NUMBER = blockNumber;
-    config.CHUNK_PER_CONJOB = 5000;
-
-    // Convert the config object to an ES module format
-    const configContent = `export default ${JSON.stringify(config, null, 2)};`;
-
-    // Write (overwrite) the updated config to the file
-    fs.writeFileSync(configFilePath, configContent, "utf8");
-    console.log("Block number and chunkPerConjob saved to config file:", configFilePath);
+    // Write the updated content back to the .env file
+    fs.writeFileSync(envFilePath, envContent, "utf-8");
+    console.log(`Data saved to .env file: ${envFilePath}`);
 }
 
 main()

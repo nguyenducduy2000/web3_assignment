@@ -22,6 +22,12 @@ export default class Transaction extends BaseModel {
     declare age: number
 
     @column()
+    declare from: string
+
+    @column()
+    declare to: string
+
+    @column()
     declare user: string
 
     @column()

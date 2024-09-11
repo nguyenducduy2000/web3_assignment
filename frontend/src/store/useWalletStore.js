@@ -3,13 +3,13 @@ import { ethers } from "ethers";
 import { toast } from "react-toastify";
 
 // Create the zustand store
-const useWalletStore = create((set) => ({
+const useWalletStore = create((set, get) => ({
     provider: null,
     signer: null,
     address: null,
     network: null,
     balance: null,
-
+    latestBlock: null,
     // Function to handle login
     login: async () => {
         try {
@@ -17,9 +17,7 @@ const useWalletStore = create((set) => ({
                 throw new Error("No MetaMask found");
             }
 
-            const newProvider = new ethers.providers.Web3Provider(
-                window.ethereum
-            );
+            const newProvider = new ethers.providers.Web3Provider(window.ethereum);
             await window.ethereum.request({
                 method: "eth_requestAccounts",
             });
@@ -62,6 +60,19 @@ const useWalletStore = create((set) => ({
             balance: null,
         });
         toast.info("Logged out successfully");
+    },
+
+    getLatestBlock: async () => {
+        try {
+            const provider = get().provider;
+            if (provider) {
+                const latestBlock = await provider.getBlockNumber();
+                set({ latestBlock: latestBlock });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.message);
+        }
     },
 }));
 

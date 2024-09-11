@@ -19,7 +19,8 @@ const useContractBalanceStore = create((set, get) => ({
     depositTimestamp: null,
     ownedNFTs: [],
     locktime: null,
-    fixedGaslimit: 900000,
+    nftTimestamp: null,
+    fixedGaslimit: 9000000,
 
     // Function to fetch and set contract balances
     fetchBalances: async (signer, address) => {
@@ -27,48 +28,34 @@ const useContractBalanceStore = create((set, get) => ({
             const { TokenA, TokenB, Staking } = contractAddress;
 
             // Fetch TokenA balance
-            const TokenAContract = new ethers.Contract(
-                TokenA,
-                TokenAArtifact.abi,
-                signer
-            );
+            const TokenAContract = new ethers.Contract(TokenA, TokenAArtifact.abi, signer);
             const tokenA = await TokenAContract.balanceOf(address);
             const totalSupply = await TokenAContract.balanceOf(TokenA);
 
             // Fetch TokenB balance
-            const TokenBContract = new ethers.Contract(
-                TokenB,
-                TokenBArtifact.abi,
-                signer
-            );
+            const TokenBContract = new ethers.Contract(TokenB, TokenBArtifact.abi, signer);
             const tokenB = await TokenBContract.balanceOf(address);
 
             // Fetch Staking balance and deposit info
-            const stakingContract = new ethers.Contract(
-                Staking,
-                StakingArtifact.abi,
-                signer
-            );
+            const stakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
             const depositInfo = await stakingContract.deposits(address);
-            const userAPR = await stakingContract.userAPR(address);
-            const depositedTokenB = await stakingContract.getDepositedNFTs(
-                address
-            );
+            const depositedTokenB = await stakingContract.getDepositedNFTs(address);
 
             // Parse the deposit info
-            const [counter, amount, reward, timestamp, nftTimestamp] =
-                depositInfo.toString().split(",");
+            const [counter, amount, reward, timestamp, nftTimestamp, userAPR] = depositInfo.toString().split(",");
             // Convert to a Date object;
             const locktime = parseInt(timestamp) + 300;
             const dateTime = new Date(locktime * 1000); // Multiply by 1000 to convert seconds to milliseconds
             // Convert to a human-readable string
             const formattedDate = dateTime.toLocaleString(); // Local date and time string
+            const nftDate = new Date(parseInt(nftTimestamp) * 1000);
             // Update the state with the fetched balances and deposit info
+            get().fetchOwnedNFTs(signer, address);
             set({
-                totalSupply: ethers.utils.formatEther(totalSupply),
-                tokenA: ethers.utils.formatEther(tokenA),
+                totalSupply: await ethers.utils.formatEther(totalSupply),
+                tokenA: await ethers.utils.formatEther(tokenA),
                 tokenB: tokenB,
-                depositedTokenA: ethers.utils.formatEther(amount), // This is the amount field from DepositInfo
+                depositedTokenA: await ethers.utils.formatEther(amount), // This is the amount field from DepositInfo
                 depositedTokenB: depositedTokenB
                     .toString()
                     .split(",")
@@ -79,6 +66,7 @@ const useContractBalanceStore = create((set, get) => ({
                 depositReward: ethers.utils.formatEther(reward),
                 depositTimestamp: timestamp,
                 locktime: formattedDate,
+                nftTimestamp: nftDate.toLocaleString(),
             });
         } catch (error) {
             console.error("Failed to fetch balances:", error);
@@ -92,21 +80,13 @@ const useContractBalanceStore = create((set, get) => ({
             const { TokenA } = contractAddress;
             console.log("signer:", signer);
 
-            const TokenAContract = new ethers.Contract(
-                TokenA,
-                TokenAArtifact.abi,
-                signer
-            );
+            const TokenAContract = new ethers.Contract(TokenA, TokenAArtifact.abi, signer);
 
             const amountWei = ethers.utils.parseEther(amount);
             // Perform the transfer
-            const tx = await TokenAContract.transferToUser(
-                recipient,
-                amountWei,
-                {
-                    gasLimit: get().fixedGaslimit,
-                }
-            );
+            const tx = await TokenAContract.transferToUser(recipient, amountWei, {
+                gasLimit: get().fixedGaslimit,
+            });
             await tx.wait(); // Wait for the transaction to be mined
 
             // Fetch the updated balance
@@ -115,9 +95,7 @@ const useContractBalanceStore = create((set, get) => ({
             // Update the state with the new balance
             set({ tokenA: updatedBalance.toString() });
 
-            toast.success(
-                `Successfully transferred ${amount} ETH to ${recipient}`
-            );
+            toast.success(`Successfully transferred ${amount} ETH to ${recipient}`);
         } catch (error) {
             console.error("Failed to transfer tokens:", error);
             toast.error(error.message);
@@ -130,22 +108,11 @@ const useContractBalanceStore = create((set, get) => ({
             const { TokenA, Staking } = contractAddress;
 
             // Create contract instances
-            const TokenAContract = new ethers.Contract(
-                TokenA,
-                TokenAArtifact.abi,
-                signer
-            );
-            const StakingContract = new ethers.Contract(
-                Staking,
-                StakingArtifact.abi,
-                signer
-            );
+            const TokenAContract = new ethers.Contract(TokenA, TokenAArtifact.abi, signer);
+            const StakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
 
             const userAddress = await signer.getAddress();
-            const currentAllowance = await TokenAContract.allowance(
-                userAddress,
-                Staking
-            );
+            const currentAllowance = await TokenAContract.allowance(userAddress, Staking);
 
             const amountWei = ethers.utils.parseEther(amount);
             console.log("amount:", amount);
@@ -153,17 +120,11 @@ const useContractBalanceStore = create((set, get) => ({
 
             // If current allowance is less than the amount to deposit, request approval
             if (currentAllowance.lt(amountWei)) {
-                const approveTx = await TokenAContract.approve(
-                    Staking,
-                    amountWei,
-                    {
-                        gasLimit: get().fixedGaslimit,
-                    }
-                );
+                const approveTx = await TokenAContract.approve(Staking, amountWei, {
+                    gasLimit: get().fixedGaslimit,
+                });
                 await approveTx.wait();
-                toast.success(
-                    "Approval successful. Please confirm the deposit transaction."
-                );
+                toast.success("Approval successful. Please confirm the deposit transaction.");
             }
 
             // Then, perform the deposit
@@ -172,11 +133,7 @@ const useContractBalanceStore = create((set, get) => ({
             });
             await depositTx.wait();
 
-            toast.success(
-                `Successfully deposited ${ethers.utils.formatEther(
-                    amountWei
-                )} Token A`
-            );
+            toast.success(`Successfully deposited ${ethers.utils.formatEther(amountWei)} Token A`);
 
             // Update balances after deposit
             await get().fetchBalances(signer, await signer.getAddress());
@@ -186,28 +143,21 @@ const useContractBalanceStore = create((set, get) => ({
         }
     },
 
-    withdrawTokenA: async (signer, amount) => {
+    withdraw: async (signer) => {
         try {
             const { Staking } = contractAddress;
 
             // Create contract instance
-            const StakingContract = new ethers.Contract(
-                Staking,
-                StakingArtifact.abi,
-                signer
-            );
+            const StakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
 
-            const amountWei = ethers.utils.parseEther(amount);
             // Perform the withdrawal
-            const withdrawTx = await StakingContract.withdraw(amountWei, {
-                gasLimit: get().fixedGaslimit,
-            });
+            const withdrawTx = await StakingContract.withdraw();
 
             // Wait for the transaction to be mined
             const receipt = await withdrawTx.wait();
 
             if (receipt.status === 1) {
-                toast.success(`Successfully withdrawn ${amountWei} tokens`);
+                toast.success(`Successfully withdrawn tokens`);
                 await get().fetchBalances(signer, await signer.getAddress());
             } else {
                 throw new Error("Transaction failed");
@@ -222,28 +172,18 @@ const useContractBalanceStore = create((set, get) => ({
         try {
             const { TokenB, Staking } = contractAddress;
 
-            const TokenBContract = new ethers.Contract(
-                TokenB,
-                TokenBArtifact.abi,
-                signer
-            );
+            const TokenBContract = new ethers.Contract(TokenB, TokenBArtifact.abi, signer);
 
-            const StakingContract = new ethers.Contract(
-                Staking,
-                StakingArtifact.abi,
-                signer
-            );
+            const StakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
 
             const approveTx = await TokenBContract.approve(Staking, tokenId, {
                 gasLimit: get().fixedGaslimit,
             });
             await approveTx.wait();
-            toast.success(
-                "Approval successful. Please confirm the deposit transaction."
-            );
+            toast.success("Approval successful. Please confirm the deposit transaction.");
 
             // Perform the deposit
-            console.log("tokenId:", tokenId);
+            // console.log("tokenId:", tokenId);
             const depositTx = await StakingContract.depositNFT(tokenId);
             const receipt = await depositTx.wait();
 
@@ -251,6 +191,7 @@ const useContractBalanceStore = create((set, get) => ({
                 toast.success(`Successfully deposited Token ${tokenId}`);
                 // Update balances after deposit
                 await get().fetchBalances(signer, await signer.getAddress());
+                return true;
             } else {
                 throw new Error("Transaction failed");
             }
@@ -265,11 +206,7 @@ const useContractBalanceStore = create((set, get) => ({
             const { Staking } = contractAddress;
 
             // Create contract instance
-            const StakingContract = new ethers.Contract(
-                Staking,
-                StakingArtifact.abi,
-                signer
-            );
+            const StakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
 
             // Perform the withdrawal
             const withdrawTx = await StakingContract.withdrawNFT(tokenId, {
@@ -295,39 +232,55 @@ const useContractBalanceStore = create((set, get) => ({
         try {
             const { TokenB } = contractAddress;
 
-            const TokenBContract = new ethers.Contract(
-                TokenB,
-                TokenBArtifact.abi,
-                signer
-            );
+            const TokenBContract = new ethers.Contract(TokenB, TokenBArtifact.abi, signer);
 
-            const filter = TokenBContract.filters.Transfer(null, address, null);
-            const events = await TokenBContract.queryFilter(
-                filter,
-                0,
-                "latest"
-            );
+            const balance = await TokenBContract.balanceOf(address);
+            const ownedNFTs = [];
+            let tokenId = 0;
 
-            const ownedNFTs = new Set();
-            for (const event of events) {
-                const tokenId = event.args.tokenId.toString();
-                try {
-                    const owner = await TokenBContract.ownerOf(tokenId);
-                    if (owner.toLowerCase() === address.toLowerCase()) {
-                        ownedNFTs.add(tokenId);
-                    }
-                } catch (error) {
-                    // NFT has been transferred or burned, ignore it
-                    toast.error(error.message);
-                    continue;
+            while (ownedNFTs.length < balance) {
+                // check owner of tokenId to see if the owner is the same as the address
+                const owner = await TokenBContract.ownerOf(tokenId);
+                console.log("owner:", owner);
+
+                if (owner === address) {
+                    ownedNFTs.push(tokenId);
+                }
+                tokenId++;
+
+                if (tokenId > 10000) {
+                    throw new Error("Exceeded maximum number of NFTs");
                 }
             }
+
             set({
                 ownedNFTs: Array.from(ownedNFTs),
             });
         } catch (error) {
             console.error("Error fetching owned NFTs:", error);
             toast.error("Failed to fetch owned NFTs");
+        }
+    },
+
+    claimReward: async (signer) => {
+        try {
+            const { Staking } = contractAddress;
+
+            // Create contract instance
+            const StakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
+
+            // perform the claim reward
+            const claimTx = await StakingContract.claimReward();
+            const receipt = await claimTx.wait();
+            if (receipt.status === 1) {
+                toast.success(`Successfully claim reward`);
+                // Update balances after withdrawal
+                await get().fetchBalances(signer, await signer.getAddress());
+                await get().fetchOwnedNFTs(signer, await signer.getAddress());
+            }
+        } catch (error) {
+            console.error("Failed to withdraw tokens:", error);
+            toast.error(error.message);
         }
     },
 

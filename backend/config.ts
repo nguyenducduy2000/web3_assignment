@@ -1,0 +1,4 @@
+export default {
+  BLOCK_NUMBER: 43575085,
+  CHUNK_PER_CONJOB: 5000,
+}

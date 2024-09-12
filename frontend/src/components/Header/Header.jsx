@@ -4,12 +4,62 @@ import { Menu, Button, Dropdown, Flex } from "antd";
 // import { ethers } from "ethers";
 import { toast } from "react-toastify";
 import { useWalletStore, useContractBalanceStore } from "../../store";
+import { useEffect } from "react";
 // import useContractBalanceStore from "../../store/useContractBalanceStore";
-
 function Header() {
     const navigate = useNavigate();
-    const { provider, address, balance, login, logout } = useWalletStore();
-    const { baseAPR } = useContractBalanceStore();
+    const { provider, address, balance, login, logout, getBalance } = useWalletStore();
+    const {
+        baseAPR,
+        totalSupply,
+        tokenA,
+        tokenB,
+        depositedTokenA,
+        depositedTokenB,
+        stakingBalance,
+        bonusAPR,
+        depositCounter,
+        calculatedReward,
+        pendingReward,
+        depositTimestamp,
+        ownedNFTs,
+        timestamp,
+        locktime,
+        nftTimestamp,
+    } = useContractBalanceStore();
+
+    useEffect(() => {
+        const fetchWallatBalance = async () => {
+            try {
+                getBalance();
+            } catch (error) {
+                console.error(error);
+                toast.error(error.message);
+            }
+        };
+        fetchWallatBalance();
+    }, [
+        provider,
+        address,
+        getBalance,
+        totalSupply,
+        tokenA,
+        tokenB,
+        depositedTokenA,
+        depositedTokenB,
+        stakingBalance,
+        baseAPR,
+        bonusAPR,
+        depositCounter,
+        calculatedReward,
+        pendingReward,
+        depositTimestamp,
+        ownedNFTs,
+        timestamp,
+        locktime,
+        nftTimestamp,
+    ]);
+
     const handleChangeWallet = async () => {
         try {
             if (!provider) {
@@ -31,6 +81,7 @@ function Header() {
             toast.error("Failed to switch wallet");
         }
     };
+
     const items = [
         {
             key: "home",

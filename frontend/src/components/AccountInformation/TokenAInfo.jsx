@@ -1,6 +1,6 @@
 import { Card, Flex, Divider, Button } from "antd";
 import useWalletStore from "../../store/useWalletStore";
-import useContractBalanceStore from "../../store/useContractBalanceStore";
+import {useContractBalanceStore} from "../../store";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import ActionButton from "../ActionButton/ActionButton";
@@ -10,7 +10,6 @@ function TokenAInfo() {
     const { signer, address } = useWalletStore();
     const [amountA, setAmountA] = useState(null);
     const [depositA, setDepositA] = useState(null);
-
     const {
         totalSupply,
         tokenA,
@@ -50,7 +49,7 @@ function TokenAInfo() {
         <Card wrap style={{ fontSize: "18px" }}>
             <Flex vertical gap={"small"}>
                 <Divider>
-                    <h4>Token A information</h4>
+                    <h4 style={{ fontWeight: "600" }}>Token A information</h4>
                 </Divider>
                 <div
                     style={{

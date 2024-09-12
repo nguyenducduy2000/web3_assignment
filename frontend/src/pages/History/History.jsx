@@ -1,5 +1,5 @@
 import { Content } from "antd/es/layout/layout";
-import { Table, Tag, Pagination, Flex, Spin } from "antd";
+import { Table, Tag, Pagination, Flex, Spin, Switch } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { historyService } from "../../service/httpServices";
@@ -79,16 +79,16 @@ const columns = [
         key: "args",
         render: (args, record) => {
             const { method } = record;
-    
+
             if (method.includes("NFT")) {
                 // Treat the args as a string, remove leading zeros, and remove the decimal point
-                let tokenId = args.toString().replace(/\./g, '').replace(/^0+/, ''); // Remove leading zeros and decimal point
-    
+                let tokenId = args.toString().replace(/\./g, "").replace(/^0+/, ""); // Remove leading zeros and decimal point
+
                 // If the tokenId becomes empty after stripping, it's 0
                 if (tokenId === "") {
                     tokenId = "0";
                 }
-    
+
                 return `Token Id: ${tokenId}`;
             } else {
                 // For non-NFT methods, display 2 decimal places
@@ -108,13 +108,14 @@ const columns = [
 ];
 
 function History() {
+    const [viewAdmin, setViewAdmin] = useState(false);
     const { address } = useWalletStore();
     const { filter, setFilter } = useFilter();
     const { paginationPage, setPaginationPage, setCurrentPage, setSizeChange } = usePaginationPage((state) => state);
     const { history, setHistory } = useHistory((state) => state);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    // const [data, setData] = useState([]);
+
     useEffect(() => {
         if (!address) navigate("/");
     }, [address, navigate]);
@@ -123,32 +124,63 @@ function History() {
         const fetchData = async () => {
             try {
                 let res;
+                const isOwner = import.meta.env.VITE_OWNER;
                 //  if current url has "/filter" in it then use get history filter
-                if (window.location.pathname.includes("filter")) {
-                    res = await historyService.getHistoryFilter(
-                        address,
-                        filter,
-                        paginationPage.currentPage,
-                        paginationPage.perPage
-                    );
-                    if (res) {
-                        // console.log("filter res: ", res);
-                        setHistory(res.data);
-                        setPaginationPage(res.meta);
-                        setLoading(false);
+                if (isOwner && viewAdmin) {
+                    if (window.location.pathname.includes("filter")) {
+                        res = await historyService.adminGetHistoryFilter(
+                            address,
+                            filter,
+                            paginationPage.currentPage,
+                            paginationPage.perPage
+                        );
+                        if (res) {
+                            // console.log("filter res: ", res);
+                            setHistory(res.data);
+                            setPaginationPage(res.meta);
+                            setLoading(false);
+                        }
+                    } else {
+                        res = await historyService.adminGetHistory(
+                            address,
+                            paginationPage.currentPage,
+                            paginationPage.perPage
+                        );
+                        // console.log(res.data);
+                        if (res) {
+                            // console.log("res: ", res.meta);
+                            setHistory(res.data);
+                            setPaginationPage(res.meta);
+                            setLoading(false);
+                        }
                     }
                 } else {
-                    res = await historyService.getUserHistory(
-                        address,
-                        paginationPage.currentPage,
-                        paginationPage.perPage
-                    );
-                    // console.log(res.data);
-                    if (res) {
-                        // console.log("res: ", res.meta);
-                        setHistory(res.data);
-                        setPaginationPage(res.meta);
-                        setLoading(false);
+                    if (window.location.pathname.includes("filter")) {
+                        res = await historyService.getHistoryFilter(
+                            address,
+                            filter,
+                            paginationPage.currentPage,
+                            paginationPage.perPage
+                        );
+                        if (res) {
+                            // console.log("filter res: ", res);
+                            setHistory(res.data);
+                            setPaginationPage(res.meta);
+                            setLoading(false);
+                        }
+                    } else {
+                        res = await historyService.getUserHistory(
+                            address,
+                            paginationPage.currentPage,
+                            paginationPage.perPage
+                        );
+                        // console.log(res.data);
+                        if (res) {
+                            // console.log("res: ", res.meta);
+                            setHistory(res.data);
+                            setPaginationPage(res.meta);
+                            setLoading(false);
+                        }
                     }
                 }
             } catch (error) {
@@ -157,7 +189,17 @@ function History() {
             }
         };
         fetchData();
-    }, [address, setPaginationPage, paginationPage.currentPage, paginationPage.perPage, setHistory, filter, setFilter]);
+    }, [
+        address,
+        setPaginationPage,
+        paginationPage.currentPage,
+        paginationPage.perPage,
+        setHistory,
+        filter,
+        setFilter,
+        viewAdmin,
+    ]);
+    
 
     const handlePageChange = (value) => {
         setCurrentPage(value);
@@ -171,6 +213,11 @@ function History() {
         setSizeChange(current, pageSize);
     };
 
+    const handleSwitchViewAdmin = () => {
+        setCurrentPage(1);
+        setViewAdmin(!viewAdmin);
+    };
+
     if (loading)
         return (
             // give me style for the comopnent that strect out to full monitor
@@ -182,7 +229,16 @@ function History() {
     return (
         <Content style={{ padding: "0 48px", marginTop: "24px" }}>
             <h1>History</h1>
-            <Filter />
+            <Flex gap="middle" align="center" justify="end" className="mb-3">
+                {/* {address === import.meta.env.VITE_OWNER && ( */}
+                {address === import.meta.env.VITE_OWNER && (
+                    <>
+                        <p>Currently viewing as admin</p>
+                        <Switch checked={viewAdmin} onChange={handleSwitchViewAdmin} />
+                    </>
+                )}
+                <Filter />
+            </Flex>
             <Table
                 columns={columns}
                 dataSource={history}

@@ -5,7 +5,6 @@ import { toast } from "react-toastify";
 import TokenAArtifact from "../contracts/TokenA.json";
 import TokenBArtifact from "../contracts/TokenB.json";
 import StakingArtifact from "../contracts/Staking.json";
-
 const useContractBalanceStore = create((set, get) => ({
     totalSupply: null,
     tokenA: null,
@@ -48,20 +47,17 @@ const useContractBalanceStore = create((set, get) => ({
             const locktime = await stakingContract.lockTimestamp();
             // Parse the deposit info
             const [counter, amount, reward, timestamp, nftTimestamp, bonusAPR] = depositInfo.toString().split(",");
-            // Convert to a Date object;
-            // const timestamp = parseInt(timestamp) + 300;
-            const dateTime = new Date(parseInt(timestamp) * 1000); // Multiply by 1000 to convert seconds to milliseconds
             // Convert to a human-readable string
-            const formattedDate = dateTime.toLocaleString(); // Local date and time string
-            const formattedLocktime = new Date(parseInt(locktime) * 1000).toLocaleString();
-            const nftDate = new Date(parseInt(nftTimestamp) * 1000);
+            // const formattedDate = new Date(parseInt(timestamp) * 1000).toLocaleString(); // Local date and time string
+            // const formattedLocktime = new Date(parseInt(locktime) * 1000).toLocaleString();
+            // const nftDate = new Date(parseInt(nftTimestamp) * 1000);
             // Update the state with the fetched balances and deposit info
             get().fetchOwnedNFTs(signer, address);
             set({
-                totalSupply: await ethers.utils.formatEther(totalSupply),
-                tokenA: await ethers.utils.formatEther(tokenA),
+                totalSupply: ethers.utils.formatEther(totalSupply),
+                tokenA: ethers.utils.formatEther(tokenA),
                 tokenB: tokenB,
-                depositedTokenA: await ethers.utils.formatEther(amount), // This is the amount field from DepositInfo
+                depositedTokenA: ethers.utils.formatEther(amount), // This is the amount field from DepositInfo
                 depositedTokenB: depositedTokenB
                     .toString()
                     .split(",")
@@ -73,9 +69,9 @@ const useContractBalanceStore = create((set, get) => ({
                 calculatedReward: ethers.utils.formatEther(reward),
                 pendingReward: ethers.utils.formatEther(pendingReward),
                 depositTimestamp: timestamp,
-                timestamp: formattedDate,
-                locktime: formattedLocktime,
-                nftTimestamp: nftDate.toLocaleString(),
+                timestamp: parseInt(timestamp),
+                locktime: parseInt(locktime),
+                nftTimestamp: parseInt(nftTimestamp),
             });
         } catch (error) {
             console.error("Failed to fetch balances:", error);
@@ -103,8 +99,8 @@ const useContractBalanceStore = create((set, get) => ({
 
             // Update the state with the new balance
             set({ tokenA: updatedBalance.toString() });
-
             toast.success(`Successfully transferred ${amount} ETH to ${recipient}`);
+            get().fetchBalances(signer, recipient);
         } catch (error) {
             console.error("Failed to transfer tokens:", error);
             toast.error(error.message);
@@ -124,8 +120,8 @@ const useContractBalanceStore = create((set, get) => ({
             const currentAllowance = await TokenAContract.allowance(userAddress, Staking);
 
             const amountWei = ethers.utils.parseEther(amount);
-            console.log("amount:", amount);
-            console.log("amountWei:", amountWei.toString());
+            // console.log("amount:", amount);
+            // console.log("amountWei:", amountWei.toString());
 
             // If current allowance is less than the amount to deposit, request approval
             if (currentAllowance.lt(amountWei)) {
@@ -140,9 +136,14 @@ const useContractBalanceStore = create((set, get) => ({
             const depositTx = await StakingContract.deposit(amountWei, {
                 gasLimit: get().fixedGaslimit,
             });
-            await depositTx.wait();
+            const receipt = await depositTx.wait();
 
-            toast.success(`Successfully deposited ${ethers.utils.formatEther(amountWei)} Token A`);
+            if (receipt.status === 1) {
+                toast.success(`Successfully deposited ${ethers.utils.formatEther(amountWei)} Token A`);
+                get().fetchBalances(signer, await signer.getAddress());
+            } else {
+                throw new Error("Transaction failed");
+            }
 
             // Update balances after deposit
             // await get().fetchBalances(signer, await signer.getAddress());
@@ -167,7 +168,7 @@ const useContractBalanceStore = create((set, get) => ({
 
             if (receipt.status === 1) {
                 toast.success(`Successfully withdrawn tokens`);
-                // await get().fetchBalances(signer, await signer.getAddress());
+                await get().fetchBalances(signer, await signer.getAddress());
             } else {
                 throw new Error("Transaction failed");
             }
@@ -199,7 +200,7 @@ const useContractBalanceStore = create((set, get) => ({
             if (receipt.status === 1) {
                 toast.success(`Successfully deposited Token ${tokenId}`);
                 // Update balances after deposit
-                // await get().fetchBalances(signer, await signer.getAddress());
+                await get().fetchBalances(signer, await signer.getAddress());
                 return true;
             } else {
                 throw new Error("Transaction failed");
@@ -227,7 +228,7 @@ const useContractBalanceStore = create((set, get) => ({
             if (receipt.status === 1) {
                 toast.success(`Successfully withdrawn Token: ${tokenId}`);
                 // Update balances after withdrawal
-                // await get().fetchBalances(signer, await signer.getAddress());
+                await get().fetchBalances(signer, await signer.getAddress());
             } else {
                 throw new Error("Transaction failed");
             }
@@ -250,7 +251,7 @@ const useContractBalanceStore = create((set, get) => ({
             while (ownedNFTs.length < balance) {
                 // check owner of tokenId to see if the owner is the same as the address
                 const owner = await TokenBContract.ownerOf(tokenId);
-                console.log("owner:", owner);
+                // console.log("owner:", owner);
 
                 if (owner === address) {
                     ownedNFTs.push(tokenId);
@@ -284,8 +285,9 @@ const useContractBalanceStore = create((set, get) => ({
             if (receipt.status === 1) {
                 toast.success(`Successfully claim reward`);
                 // Update balances after withdrawal
-                // await get().fetchBalances(signer, await signer.getAddress());
-                // await get().fetchOwnedNFTs(signer, await signer.getAddress());
+                await get().fetchBalances(signer, await signer.getAddress());
+            } else {
+                throw new Error("Transaction claim reward failed");
             }
         } catch (error) {
             console.error("Failed to withdraw tokens:", error);
@@ -293,13 +295,28 @@ const useContractBalanceStore = create((set, get) => ({
         }
     },
 
-    // Reset balances on logout
-    resetBalances: () => {
-        set({
-            depositedTokenA: null,
-            depositedTokenB: null,
-            stakingBalance: null,
-        });
+    updateBaseAPR: async (signer, address, APR) => {
+        try {
+            const owner = import.meta.env.VITE_OWNER;
+            if (address === owner) {
+                const { Staking } = contractAddress;
+                const StakingContract = new ethers.Contract(Staking, StakingArtifact.abi, signer);
+                const updateTx = await StakingContract.modifyBaseAPR(APR);
+                const receipt = await updateTx.wait();
+                if (receipt.status === 1) {
+                    toast.success(`Successfully update base APR to ${APR}`);
+                    // Update balances after withdrawal
+                    await get().fetchBalances(signer, await signer.getAddress());
+                } else {
+                    throw new Error("Transaction update base APR failed");
+                }
+            } else {
+                toast.error("Only owner can update base APR");
+            }
+        } catch (error) {
+            console.error("Failed to update base APR:", error);
+            toast.error(error.message);
+        }
     },
 }));
 

@@ -1,6 +1,6 @@
 import { Flex, Drawer, Space, Button, Form, Input, Select, Slider } from "antd";
 import { useEffect, useState } from "react";
-import { useHistory, useWalletStore, useFilter } from "../../store";
+import { useHistory, useWalletStore, useFilter, usePaginationPage } from "../../store";
 import { useNavigate } from "react-router-dom";
 // const options = [];
 // for (let i = 10; i < 36; i++) {
@@ -11,11 +11,13 @@ import { useNavigate } from "react-router-dom";
 // }
 function Filter() {
     const { address, latestBlock, getLatestBlock } = useWalletStore();
+    const { setCurrentPage } = usePaginationPage();
     const { setFilter } = useFilter();
     const [open, setOpen] = useState(false);
     const { methods } = useHistory();
     const [form] = Form.useForm();
     const nagigate = useNavigate();
+    const initBlock = parseInt(import.meta.env.VITE_INIT_BLOCK);
     // const options = Array.from(new Set(history.map((data) => data.method))).map((method) => ({
     //     value: method,
     //     label: method,
@@ -49,6 +51,7 @@ function Filter() {
         // Log the form data
         // console.log("Form data:", formData);
         setFilter(formData);
+        setCurrentPage(1);
         toggleDrawer();
         // navigate to /:address/filter?URLSearchParams
         nagigate(`/history/${address}/filter?${new URLSearchParams(formData).toString()}`);
@@ -116,12 +119,11 @@ function Filter() {
                         labelCol={{ span: 24 }}
                         wrapperCol={{ span: 24 }}
                     >
-                        {console.log(latestBlock)}
                         <Slider
                             range
-                            min={0}
+                            min={initBlock}
                             max={latestBlock}
-                            defaultValue={[0, latestBlock]}
+                            defaultValue={[initBlock, latestBlock]}
                             tooltip={{ placement: "bottom", autoAdjustOverflow: true }}
                         />
                     </Form.Item>

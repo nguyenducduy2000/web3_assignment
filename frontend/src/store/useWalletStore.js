@@ -27,15 +27,15 @@ const useWalletStore = create((set, get) => ({
             const newAddress = await newSigner.getAddress();
 
             // Fetch and set the balance
-            const balanceInWei = await newProvider.getBalance(newAddress);
-            const balanceInEth = ethers.utils.formatEther(balanceInWei);
+            // const balanceInWei = await newProvider.getBalance(newAddress);
+            // const balanceInEth = ethers.utils.formatEther(balanceInWei);
 
             set({
                 provider: newProvider,
                 signer: newSigner,
                 address: newAddress,
                 network: network,
-                balance: balanceInEth,
+                // balance: balanceInEth,
             });
             toast.success("Logged in successfully");
             // console.log("provider:", newProvider);
@@ -68,6 +68,21 @@ const useWalletStore = create((set, get) => ({
             if (provider) {
                 const latestBlock = await provider.getBlockNumber();
                 set({ latestBlock: latestBlock });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.message);
+        }
+    },
+
+    getBalance: async () => {
+        try {
+            const provider = get().provider;
+            const address = get().address;
+            if (provider && address) {
+                const balanceInWei = await provider.getBalance(address);
+                const balanceInEth = ethers.utils.formatEther(balanceInWei);
+                set({ balance: balanceInEth });
             }
         } catch (error) {
             console.error(error);

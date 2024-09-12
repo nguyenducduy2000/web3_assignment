@@ -1,18 +1,10 @@
 import { Card, Flex, Divider } from "antd";
 // import useWalletStore from "../../store/useWalletStore";
-import useContractBalanceStore from "../../store/useContractBalanceStore";
+import { useContractBalanceStore } from "../../store";
 
 function Staking() {
-    const {
-        depositedTokenA,
-        depositedTokenB,
-        calculatedReward,
-        pendingReward,
-        timestamp,
-        locktime,
-        nftTimestamp,
-    } = useContractBalanceStore();
-
+    const { depositedTokenA, depositedTokenB, calculatedReward, pendingReward, timestamp, locktime, nftTimestamp } =
+        useContractBalanceStore();
     return (
         <Flex vertical gap="middle">
             <Card className="flex flex-fill">
@@ -37,26 +29,21 @@ function Staking() {
                         >
                             <h3>Token A balance</h3>
                         </Divider>
+                        <p>Your Token A deposit balance: {depositedTokenA ? `${depositedTokenA} TKA` : "Loading..."}</p>
+                        <p>Your calculated reward: {calculatedReward ? `${calculatedReward} TKA` : "Loading..."}</p>
+                        <p>Your pending reward: {pendingReward ? `${pendingReward} TKA` : "Loading..."}</p>
                         <p>
-                            Your Token A deposit balance:{" "}
-                            {depositedTokenA
-                                ? `${depositedTokenA} TKA`
-                                : "Loading..."}
+                            Last contract interaction:{" "}
+                            {timestamp !== 0
+                                ? `${new Date(timestamp * 1000).toLocaleString()}`
+                                : "No transaction was made yet..."}
                         </p>
                         <p>
-                            Your calculated reward:{" "}
-                            {calculatedReward
-                                ? `${calculatedReward} TKA`
-                                : "Loading..."}
+                            Contract locked timestamp:{" "}
+                            {locktime !== 0
+                                ? `${new Date(locktime * 1000).toLocaleString()}`
+                                : "No transaction was made yet..."}
                         </p>
-                        <p>
-                            Your pending reward:{" "}
-                            {pendingReward
-                                ? `${pendingReward} TKA`
-                                : "Loading..."}
-                        </p>
-                        <p>Last contract interaction: {timestamp}</p>
-                        <p>Contract locked timestamp: {locktime}</p>
                     </Card>
                     <Card
                         style={{
@@ -74,13 +61,13 @@ function Staking() {
                         </Divider>
                         <p>
                             Your token B deposit balance:{" "}
-                            {depositedTokenB
-                                ? `${depositedTokenB.length} TKB`
-                                : "Loading..."}
+                            {depositedTokenB ? `${depositedTokenB.length} TKB` : "Loading..."}
                         </p>
                         <p>
                             Token B deposit timestamp:{" "}
-                            {nftTimestamp ? `${nftTimestamp}` : "Loading..."}
+                            {nftTimestamp !== 0
+                                ? `${new Date(nftTimestamp * 1000).toLocaleString()}`
+                                : "No NFT deposited..."}
                         </p>
                     </Card>
                 </Flex>

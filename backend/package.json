@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "node bin/server.js",
-    "build": "node ace build",
+    "build": "node ace build --ignore-ts-errors",
     "dev": "node ace serve --hmr",
     "test": "node ace test",
     "lint": "eslint .",
@@ -44,9 +44,7 @@
     "@types/luxon": "^3.4.2",
     "@types/node": "^22.1.0",
     "eslint": "^8.57.0",
-    "ethers": "^5.4.7",
     "hot-hook": "^0.2.6",
-    "pino-pretty": "^11.2.2",
     "prettier": "^3.3.3",
     "ts-node": "^10.9.2",
     "typescript": "~5.5"
@@ -59,9 +57,11 @@
     "@adonisjs/lucid": "^21.1.1",
     "@vinejs/vine": "^2.1.0",
     "dotenv": "^16.4.5",
+    "ethers": "^5.4.7",
     "luxon": "^3.5.0",
     "node-schedule": "^2.1.1",
     "pg": "^8.12.0",
+    "pino-pretty": "^11.2.2",
     "reflect-metadata": "^0.2.2"
   },
   "hotHook": {

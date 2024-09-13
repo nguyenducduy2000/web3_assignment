@@ -29,9 +29,9 @@ function Staking() {
                         >
                             <h3>Token A balance</h3>
                         </Divider>
-                        <p>Your Token A deposit balance: {depositedTokenA ? `${depositedTokenA} TKA` : "Loading..."}</p>
-                        <p>Your calculated reward: {calculatedReward ? `${calculatedReward} TKA` : "Loading..."}</p>
-                        <p>Your pending reward: {pendingReward ? `${pendingReward} TKA` : "Loading..."}</p>
+                        <p>Your Token A deposit balance: {depositedTokenA ? `${parseFloat(depositedTokenA).toFixed(6)} TKA` : "Loading..."}</p>
+                        <p>Your calculated reward: {calculatedReward ? `${parseFloat(calculatedReward).toFixed(6)} TKA` : "Loading..."}</p>
+                        <p>Your pending reward: {pendingReward ? `${parseFloat(pendingReward).toFixed(6)} TKA` : "Loading..."}</p>
                         <p>
                             Last contract interaction:{" "}
                             {timestamp !== 0
@@ -42,7 +42,7 @@ function Staking() {
                             Contract locked timestamp:{" "}
                             {locktime !== 0
                                 ? `${new Date(locktime * 1000).toLocaleString()}`
-                                : "No transaction was made yet..."}
+                                : "unlocked"}
                         </p>
                     </Card>
                     <Card

@@ -15,7 +15,6 @@ export default class extends BaseSchema {
             table.string('to').notNullable()
             table.string('user').nullable()
             table.decimal('args', 30, 18).nullable()
-            // table.decimal('amount', 30, 18).nullable()
             table.decimal('txn_fee', 30, 18).nullable()
             table.unique(['transaction_hash', 'log_index']) // Ensure uniqueness
             table.timestamps(true, true)

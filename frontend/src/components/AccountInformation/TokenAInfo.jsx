@@ -7,8 +7,9 @@ import ActionButton from "../ActionButton/ActionButton";
 // import { ethers } from "ethers";
 
 function TokenAInfo() {
+    const AMOUNT_2M_TKA = "2000000";
     const { signer, address } = useWalletStore();
-    const [amountA, setAmountA] = useState(null);
+    // const [amountA, setAmountA] = useState(null);
     const [depositA, setDepositA] = useState(null);
     const {
         totalSupply,
@@ -21,12 +22,12 @@ function TokenAInfo() {
     } = useContractBalanceStore();
 
     function handleGetTokenA() {
-        if (amountA <= 0) {
-            toast.error("Amount must be greater than 0");
-            setAmountA(null);
-            return;
-        }
-        transferTokensToUser(signer, address, amountA);
+        // if (amountA <= 0) {
+        //     toast.error("Amount must be greater than 0");
+        //     setAmountA(null);
+        //     return;
+        // }
+        transferTokensToUser(signer, address, AMOUNT_2M_TKA);
     }
     function handleDepositTokenA() {
         if (parseFloat(depositA) > tokenA) {
@@ -71,7 +72,7 @@ function TokenAInfo() {
                     className="px-2"
                 >
                     <span style={{ fontWeight: "bold" }}>Total supply</span>:{" "}
-                    {totalSupply}
+                    {parseFloat(totalSupply).toFixed(6)} TKA
                 </div>
                 <div
                     style={{
@@ -82,7 +83,7 @@ function TokenAInfo() {
                     className="px-2"
                 >
                     <span style={{ fontWeight: "bold" }}>Token A</span>:{" "}
-                    {tokenA ? `${tokenA} ETH` : "Loading..."}
+                    {tokenA ? `${parseFloat(tokenA).toFixed(4)} ETH` : "Loading..."}
                 </div>
                 <div
                     style={{
@@ -96,13 +97,16 @@ function TokenAInfo() {
                     {bonusAPR || "Loading..."} %
                 </div>
                 <Flex className="mt-2" gap={"small"}>
-                    <ActionButton
+                    {/* <ActionButton
                         title={"Faucet Token A"}
                         value={amountA}
                         setValue={setAmountA}
                         action={handleGetTokenA}
                         placeholder="Enter the amount you want to get"
-                    />
+                    /> */}
+                    <Button type="primary" size="large" onClick={handleGetTokenA}>
+                        Faucet 2M TKA
+                    </Button>
                     <ActionButton
                         title="Deposit token A"
                         value={depositA}

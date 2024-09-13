@@ -26,7 +26,7 @@ function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (signer && address) {
+                if (network?.chainId === 97 && signer && address) {
                     // Fetch balances when signer and address are available
                     setLoading(true);
                     await fetchBalances(signer, address);
@@ -49,7 +49,7 @@ function Home() {
         );
     }
 
-    if (network.chainId !== 31337 && network.chainId !== 97) {
+    if (network.chainId !== 97) {
         return (
             <div>
                 <h1 className="text-center">Please switch back to the correct network</h1>

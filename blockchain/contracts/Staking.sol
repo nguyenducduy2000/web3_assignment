@@ -14,7 +14,6 @@ contract Staking is Ownable {
     uint256 public BASE_APR = 8; // 8% annual return
     uint256 public constant LOCK_TIME = 30 seconds;
     uint256 public constant MINT_THRESHOLD = 1_000_000 * 10 ** 18; // 1M Token A
-    uint256 public lockTimestamp;
 
     struct DepositInfo {
         uint256 counter;
@@ -23,6 +22,7 @@ contract Staking is Ownable {
         uint256 timestamp;
         uint256 nftDepositedTime;
         uint256 bonusAPR;
+        uint256 lockTimestamp;
     }
     // mapping(address => uint256) public userAPR;
     mapping(address => uint256) public totalDepositedAmount;
@@ -72,12 +72,11 @@ contract Staking is Ownable {
 
         // Update the deposit info
         userDeposit.amount += _amount;
-        // userDeposit.totalDepositedAmount += _amount;
         totalDepositedAmount[msg.sender] += _amount;
         userDeposit.counter += 1; // Increment the deposit/withdrawal counter
         // Update the timestamp
         userDeposit.timestamp = block.timestamp;
-        lockTimestamp = block.timestamp + LOCK_TIME;
+        userDeposit.lockTimestamp = block.timestamp + LOCK_TIME;
 
         uint256 nftCounter = tokenB.getNFTCount(msg.sender);
 
@@ -97,7 +96,7 @@ contract Staking is Ownable {
         DepositInfo storage userDeposit = deposits[msg.sender];
         require(userDeposit.amount > 0, "No deposit found");
         // Ensure 5 minutes have passed since the last deposit
-        require(block.timestamp >= lockTimestamp, "Tokens are still locked");
+        require(block.timestamp >= userDeposit.lockTimestamp, "Tokens are still locked");
 
         // Update and claim all the reward before withdrawal
         uint256 reward = calculateReward(msg.sender) + userDeposit.reward;
@@ -129,7 +128,7 @@ contract Staking is Ownable {
         require(userDeposit.amount > 0, "No deposit found");
 
         // Ensure 5 minutes have passed since the last deposit
-        require(block.timestamp >= lockTimestamp, "Tokens are still locked");
+        require(block.timestamp >= userDeposit.lockTimestamp, "Tokens are still locked");
 
         // Calculate the rewards since last timestamp
         uint256 reward = calculateReward(msg.sender) + userDeposit.reward;
@@ -184,7 +183,8 @@ contract Staking is Ownable {
 
     // Withdraw a specific NFT to decrease APR
     function withdrawNFT(uint256 tokenId) external {
-        require(block.timestamp >= lockTimestamp, "Tokens are still locked!");
+        DepositInfo storage userDeposit = deposits[msg.sender];
+        require(block.timestamp >= userDeposit.lockTimestamp, "Tokens are still locked!");
 
         require(_nftExists(msg.sender, tokenId), "NFT not deposited");
 
@@ -192,7 +192,6 @@ contract Staking is Ownable {
         tokenB.transferFrom(address(this), msg.sender, tokenId);
 
         uint256[] memory nfts = depositedNFTs[msg.sender];
-        DepositInfo storage userDeposit = deposits[msg.sender];
 
         // Calculate the reward accumulated so far
         if (userDeposit.amount > 0) {

@@ -44,9 +44,11 @@ const useContractBalanceStore = create((set, get) => ({
             const depositedTokenB = await stakingContract.getDepositedNFTs(address);
             const pendingReward = await stakingContract.calculateReward(address);
             const baseAPR = await stakingContract.BASE_APR();
-            const locktime = await stakingContract.lockTimestamp();
+            // const locktime = await stakingContract.lockTimestamp();
             // Parse the deposit info
-            const [counter, amount, reward, timestamp, nftTimestamp, bonusAPR] = depositInfo.toString().split(",");
+            const [counter, amount, reward, timestamp, nftTimestamp, bonusAPR, locktime] = depositInfo
+                .toString()
+                .split(",");
             // Convert to a human-readable string
             // const formattedDate = new Date(parseInt(timestamp) * 1000).toLocaleString(); // Local date and time string
             // const formattedLocktime = new Date(parseInt(locktime) * 1000).toLocaleString();

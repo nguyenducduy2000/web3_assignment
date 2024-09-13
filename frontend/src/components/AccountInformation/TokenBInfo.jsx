@@ -55,7 +55,7 @@ function TokenBInfo() {
                 </div>
                 <Flex className="mt-2" gap={"small"} wrap>
                     <Flex justify="start" gap="middle" vertical>
-                        <Flex gap={"small"} wrap>
+                        <Flex gap={"small"} >
                             <Select
                                 showSearch
                                 placeholder="Select Token Id to deposit"
@@ -75,7 +75,7 @@ function TokenBInfo() {
                                 Deposit Token B
                             </Button>
                         </Flex>
-                        <Flex gap={"small"} wrap>
+                        <Flex gap={"small"} >  
                             <Select
                                 showSearch
                                 placeholder="Select Token Id to withdraw"

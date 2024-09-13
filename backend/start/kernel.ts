@@ -23,10 +23,10 @@ server.errorHandler(() => import('#exceptions/handler'))
  * the request URL.
  */
 server.use([
-  () => import('#middleware/container_bindings_middleware'),
-  () => import('#middleware/force_json_response_middleware'),
-  () => import('@adonisjs/cors/cors_middleware'),
-  // () => import('./app.js'),
+    () => import('#middleware/container_bindings_middleware'),
+    () => import('#middleware/force_json_response_middleware'),
+    () => import('@adonisjs/cors/cors_middleware'),
+    // () => import('./app.js'),
 ])
 
 /**
@@ -34,9 +34,9 @@ server.use([
  * requests with a registered route.
  */
 router.use([
-  () => import('@adonisjs/core/bodyparser_middleware'),
-  () => import('@adonisjs/auth/initialize_auth_middleware'),
-  () => import('#middleware/initialize_bouncer_middleware')
+    () => import('@adonisjs/core/bodyparser_middleware'),
+    () => import('@adonisjs/auth/initialize_auth_middleware'),
+    () => import('#middleware/initialize_bouncer_middleware'),
 ])
 
 /**
@@ -44,6 +44,6 @@ router.use([
  * the routes or the routes group.
  */
 export const middleware = router.named({
-  pagination: () => import('#middleware/pagination_middleware'),
-  auth: () => import('#middleware/auth_middleware'),
+    pagination: () => import('#middleware/pagination_middleware'),
+    auth: () => import('#middleware/auth_middleware'),
 })

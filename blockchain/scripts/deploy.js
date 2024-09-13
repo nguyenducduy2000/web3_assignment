@@ -61,7 +61,7 @@ async function main() {
     // Save the staking contract block number and other data to .env files
     await saveDataToENV(
         {
-            BLOCK_NUMBER: receipt.blockNumber,
+            BLOCK_NUMBER: parseInt(receipt.blockNumber) + 1,
             CHUNK_PER_CONJOB: 5000,
             OWNER: process.env.PUBLIC_KEY,
         },
@@ -69,7 +69,7 @@ async function main() {
     );
     await saveDataToENV(
         {
-            INIT_BLOCK: receipt.blockNumber,
+            INIT_BLOCK: parseInt(receipt.blockNumber) + 1,
             OWNER: process.env.PUBLIC_KEY,
         },
         "frontend"

@@ -1,9 +1,9 @@
 import Schedule from 'node-schedule'
 import { ethers } from 'ethers'
-import Transaction from '../app/models/transaction.js'
-import LastCrawledBlock from '../app/models/last_crawled_block.js'
-import contractAddress from '../contracts/contract-address.json' assert { type: 'json' }
-import StakingArtifact from '../contracts/Staking.json' assert { type: 'json' }
+import Transaction from '../../app/models/transaction.js'
+import LastCrawledBlock from '../../app/models/last_crawled_block.js'
+import contractAddress from '../../contracts/contract-address.json' assert { type: 'json' }
+import StakingArtifact from '../../contracts/Staking.json' assert { type: 'json' }
 import dotenv from 'dotenv'
 // import config from '../config.js'
 
